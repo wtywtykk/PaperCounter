@@ -23,20 +23,15 @@ typedef enum //邀请赛测评用
 ScreenEnum ScreenStatus = Cali;
 uchar ScreenClearRequired = 1;
 
-#define  MaxPaperCount 100
-#define NumOfCalibration  15
-#define rank_ 2
-
+#define NumOfCalibration  10
 
 uint CaliIndex = 1;
 ushort i_Calibration = 0;
 static ushort CaliFlag = 0;
 static ushort MeasFlag = 0;
-static float OpenCap;
-static float CapCali[NumOfCalibration];
-float Factor[rank_+1];
-static ushort TestNumPaper[NumOfCalibration] = { 1, 2, 3, 4, 5, 7, 9, 11, 14, 17, 20, 25, 27, 30, 31 };
-
+static float CapCali[NumOfCalibration] = { 0 };
+static float TestNumPaper[NumOfCalibration] = { 1, 2, 3, 4, 5, 10, 15, 20, 25, 30 };
+static ushort CalSegment[CalibrationSegmentCount] = { 3,7 };
 
 void InitSysClock(void) //430时钟初始化
 {
@@ -60,6 +55,14 @@ void InitLED(void)  //初始化LED IO口
 	P4DIR |= 1 << 7;
 	P4OUT &= ~(1 << 7);
 	P1OUT &= ~(1 << 0);
+}
+
+void Buzzer()
+{
+	P2DIR |= (1 << 5);
+	P2OUT |= (1 << 5);
+	Delay(100);
+	P2OUT &= ~(1 << 5);
 }
 
 void UpdateLED(void)
@@ -94,19 +97,10 @@ void CheckKey(void)
 {
 	char sb[32];
 
-	//switch (BoardKey_GetLastKey())
-	//{
-	//case BOARDKEY_RIGHT:
-	//	FDC2214_Init();
-	//	Control_Init();
-	//	return;
-	//	break;
-	//}
-
 	switch (ScreenStatus)  //先选定模式 再控制按键
 	{
 	case Cali:
-		
+
 		break;
 	case Run:
 
@@ -139,7 +133,6 @@ void DrawKeyHint(void)   //显示按键底部提示
 	OLED_WriteStr(OLED_Width - TipWidth, 7 * 8, RightTip, 0);
 }
 
-
 void DrawKeyHintLeft(uchar Pos, uchar Val)   //显示按键底部提示
 {
 	const char* LeftTip = "--";
@@ -169,7 +162,7 @@ void DrawInterface(void)  //显示主界面
 	case Cali:
 		sprintf(sb, "Calibrate count: %d ", CaliIndex); //打印数据
 		OLED_WriteStr(0, 0, "Calibration", 1);
-		OLED_WriteStr(0, 7*8, sb, 1);
+		OLED_WriteStr(0, 7 * 8, sb, 1);
 		break;
 	case Run:
 		break;
@@ -190,82 +183,79 @@ void UpdateScreen(void)
 	OLED_BufferFulsh();
 }
 
-void DoEvents(void)  //循环执行的
+void LSM(ushort Count, float x[], float y[], float* k, float* b)
 {
-	Control_Process();
-	switch (ScreenStatus)
-	{
-	case Cali:
-		break;
-	case Run:
-		break;
+	int i;
+	double SumXY = 0;
+	double SumX = 0;
+	double SumY = 0;
+	double SumSqrX = 0;
+	double AverageX = 0;
+	double AverageY = 0;
+
+	for (i = 0; i < Count; i++) {  //
+		SumXY += x[i] * y[i];
+		SumX += x[i];
+		SumY += y[i];
+		SumSqrX += x[i] * x[i];
 	}
+	AverageX = SumX / Count;
+	AverageY = SumY / Count;
+
+	*k = (Count * SumXY - SumX * SumY) / (Count * SumSqrX - SumX * SumX);
+	*b = AverageY - *k * AverageX;
 }
-void LSM(float* factor, ushort* zhangshu, float* CapData, float* OpenCap)
+
+void CalcCalData()
 {
-	int i, j, k;
-	int maxn = NumOfCalibration;
-	float atemp[2 * (rank_ + 1)] = { 0 }, b[rank_ + 1] = { 0 }, a[rank_ + 1][rank_ + 1];
+	//最小二乘算法计算系数
+	uint i = 0;
+	uint CalDataIndex = 0;
+	float CapCaliLog[NumOfCalibration] = { 0 };
+	float TestNumPaperLog[NumOfCalibration] = { 0 };
+	float TestNumPaperrev[NumOfCalibration] = { 0 };
 
-	for (i = 0; i < maxn; i++) {  //
-		atemp[1] += zhangshu[i];
-		atemp[2] += powf(zhangshu[i], 2);
-		atemp[3] += powf(zhangshu[i], 3);
-		atemp[4] += powf(zhangshu[i], 4);
-		atemp[5] += powf(zhangshu[i], 5);
-		atemp[6] += powf(zhangshu[i], 6);
-		b[0] += CapData[i];
-		b[1] += zhangshu[i] * CapData[i];
-		b[2] += pow(zhangshu[i], 2) * CapData[i];
+	for (i = 0; i < NumOfCalibration; i++)
+	{
+		CapCaliLog[i] = logf(CapCali[i]);
+		TestNumPaperLog[i] = logf(TestNumPaper[i]);
 	}
 
-	atemp[0] = maxn;
-
-	for (i = 0; i < rank_ + 1; i++) {  //构建线性方程组系数矩阵，b[]不变
-		k = i;
-		for (j = 0; j < rank_ + 1; j++)  a[i][j] = atemp[k++];
-	}
-
-	//以下为高斯列主元消去法解线性方程组
-	for (k = 0; k < rank_ + 1 - 1; k++) {  //n - 1列
-		int column = k;
-		double mainelement = a[k][k];
-
-		for (i = k; i < rank_ + 1; i++)  //找主元素
-			if (fabs(a[i][k]) > mainelement) {
-				mainelement = fabs(a[i][k]);
-				column = i;
-			}
-		for (j = k; j < rank_ + 1; j++) {  //交换两行
-			double atemp = a[k][j];
-			a[k][j] = a[column][j];
-			a[column][j] = atemp;
-		}
-		double btemp = b[k];
-		b[k] = b[column];
-		b[column] = btemp;
-
-		for (i = k + 1; i < rank_ + 1; i++) {  //消元过程
-			double Mik = a[i][k] / a[k][k];
-			for (j = k; j < rank_ + 1; j++)  a[i][j] -= Mik * a[k][j];
-			b[i] -= Mik * b[k];
+	for (i = 0; i < CalibrationSegmentCount; i++)
+	{
+		LSM(CalSegment[i], &CapCaliLog[CalDataIndex], &TestNumPaperLog[CalDataIndex], &Info.k[i], &Info.b[i]);
+		CalDataIndex += CalSegment[i];
+		if (i < CalibrationSegmentCount - 1)
+		{
+			Info.Boundary[i] = (CapCali[CalDataIndex - 1] + CapCali[CalDataIndex]) / 2;
 		}
 	}
-
-	b[rank_ + 1 - 1] /= a[rank_ + 1 - 1][rank_ + 1 - 1];  //回代过程
-	for (i = rank_ + 1 - 2; i >= 0; i--) {
-		double sum = 0;
-		for (j = i + 1; j < rank_ + 1; j++)  sum += a[i][j] * b[j];
-		b[i] = (b[i] - sum) / a[i][i];
+	assert(CalDataIndex == NumOfCalibration);
+	for (i = 0; i < NumOfCalibration; i++)
+	{
+		TestNumPaperrev[i] = Info.k[1] * CapCaliLog[i] + Info.b[1];
 	}
-	//高斯列主元消去法结束
-	factor = b;
+	SaveInfo();
+}
+
+float CalcPaperCount(float MeasureData)
+{
+	float MeasureDataLog = logf(MeasureData);
+	uint i = 0;
+	uint CalDataIndex = 0;
+	for (i = 0; i < CalibrationSegmentCount; i++)
+	{
+		if ((i == CalibrationSegmentCount - 1) || (MeasureData >= Info.Boundary[i]))
+		{
+			return expf(Info.k[i] * MeasureDataLog + Info.b[i]);
+		}
+	}
+	return -1;
 }
 
 void Control_Key(void)
 {
-	uchar sb;
-	float FinalData;
+	char sb[64];
 
 	//DrawKeyHint();
 
@@ -295,24 +285,37 @@ void Control_Key(void)
 				sprintf(sb, "Open Calibration");
 				OLED_Fill(0, 3 * 8, OLED_Width, 8, 0);
 				OLED_WriteStr(10, 3 * 8, sb, 1);
-				OpenCap = FDC2214_GetFinalData();
-
+				Info.OpenCap = 0;
+				Info.OpenCap = FDC2214_GetFinalData();
+				if (Info.OpenCap < 0)
+				{
+					Buzzer();
+					Delay(100);
+					Buzzer();
+					OLED_WriteStr(10, 3 * 8, "PlateShort", 1);
+					return;
+				}
 			}
-			else if (i_Calibration > NumOfCalibration*2)
+			else if (i_Calibration > NumOfCalibration * 2)
 			{
-				sprintf(sb, "Calibration Over");
+				sprintf(sb, "Calibration Done");
 				OLED_Fill(0, 3 * 8, OLED_Width, 8, 0);
 				OLED_Fill(0, 4 * 8, OLED_Width, 8, 0);
 				OLED_WriteStr(10, 3 * 8, sb, 1);
 				CaliFlag = 0;
-				//最小二乘算法计算系数
-				LSM(Factor, TestNumPaper, CapCali, &OpenCap);
+				CalcCalData();
+				Buzzer();
+				Delay(50);
+				Buzzer();
+				Delay(50);
+				Buzzer();
+				Delay(50);
 			}
 			else
 			{
-				if (i_Calibration % 2 == 1) 
+				if (i_Calibration % 2 == 1)
 				{
-					sprintf(sb, "Please put %d paper!", TestNumPaper[(i_Calibration-1)/2]);
+					sprintf(sb, "Please put %d paper!", (uint)TestNumPaper[(i_Calibration - 1) / 2]);
 					OLED_Fill(0, 3 * 8, OLED_Width, 8, 0);
 					OLED_Fill(0, 4 * 8, OLED_Width, 8, 0);
 
@@ -320,10 +323,19 @@ void Control_Key(void)
 				}
 				else
 				{
-					CapCali[i_Calibration/2 - 1] = FDC2214_GetFinalData();
-					printf("%d, %ld\r\n", TestNumPaper[i_Calibration / 2 - 1], (long)(CapCali[i_Calibration/2 - 1]));
-					sprintf(sb, "%d, %ld", TestNumPaper[i_Calibration / 2 - 1], (long)(CapCali[i_Calibration/2 - 1]));
+					CapCali[i_Calibration / 2 - 1] = FDC2214_GetFinalData();
+					if (CapCali[i_Calibration / 2 - 1] < 0)
+					{
+						Buzzer();
+						Delay(100);
+						Buzzer();
+						OLED_WriteStr(10, 3 * 8, "PlateShort", 1);
+						return;
+					}
+					printf("%d, %ld\r\n", TestNumPaper[i_Calibration / 2 - 1], (long)(CapCali[i_Calibration / 2 - 1]));
+					sprintf(sb, "%d, %ld", TestNumPaper[i_Calibration / 2 - 1], (long)(CapCali[i_Calibration / 2 - 1]));
 					OLED_WriteStr(5, 4 * 8, sb, 1);
+					Buzzer();
 				}
 			}
 			i_Calibration++;
@@ -334,19 +346,36 @@ void Control_Key(void)
 			OLED_Fill(0, 0 * 8, OLED_Width, 8, 0);
 			DrawKeyHintRight(0, 1);
 
-
-			FinalData = FDC2214_GetFinalData();
-
-			//换算成纸张数
-			float zhangshu = powf(10, (2.5726 - log10f(FinalData)) / 0.8549);
-			printf("%ld\r\n", (long)(1000 * FinalData));
-			sprintf(sb, " %ld  ", (long)(zhangshu));
-			OLED_WriteStr(0, 6 * 8, sb, 1);
-
-			//sprintf(sb, "FinalData: %ld", (long)FinalData);
-			OLED_Fill(0, 3 * 8, OLED_Width, 8, 0);
-			OLED_WriteStr(0, 5 * 8, sb, 1);
-
+			float MeasVal = FDC2214_GetFinalData();
+			if (MeasVal > 0)
+			{
+				float PaperCount = CalcPaperCount(MeasVal);
+				long PaperCountInt = (PaperCount + 0.5);
+				if (PaperCount > 0)
+				{
+					printf("%ld\r\n", (long)(1000 * PaperCount));
+					sprintf(sb, " %ld       ", PaperCountInt);
+					OLED_WriteStr(0, 6 * 8, sb, 1);
+				}
+				else
+				{
+					printf("Error\r\n");
+					OLED_WriteStr(0, 6 * 8, "Error  ", 1);
+				}
+				sprintf(sb, "1kM %ld     ", (long)((MeasVal+Info.OpenCap)*1000));
+				OLED_WriteStr(0, 2 * 8, sb, 1);
+				sprintf(sb, "1kD %ld     ", (long)((PaperCount - PaperCountInt) * 1000));
+				OLED_WriteStr(0, 3 * 8, sb, 1);
+				Buzzer();
+			}
+			else
+			{
+				printf("PlateShort\r\n");
+				OLED_WriteStr(0, 6 * 8, "PlateShort  ", 1);
+				Buzzer();
+				Delay(100);
+				Buzzer();
+			}
 		}
 		break;
 	}
@@ -366,25 +395,19 @@ int main()
 	StartTimer();
 	InitLED();
 	OLED_Init();
-	//Graphic_Init();
 	BoardKey_Init();
 	UART1_Init(115200, NULL);
+
+	OLED_WriteStr(0, 0, "FDCInit...  ", 1);
+	OLED_BufferFulsh();
+
 	FDC2214_Init();
 	Control_Init();
-
-	//JumpToStatus(Cali);
-
 
 	while (1)
 	{
 		UpdateScreen();
-		//OLED_WriteStr(0, 7 * 8, "Calibrate", 1);
 		Control_Key();
-		//CheckKey();
-		//DoEvents();
-		//UpdateLED();
-		//FDC2214_MonitorDebug();
-		//Delay(500);
 	}
 }
 

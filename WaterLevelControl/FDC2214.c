@@ -320,7 +320,7 @@ uchar FDC2214_GetChannelFreq(uchar Channel, float* Freq)
 	assert(Channel < 4);
 
 	*Freq = Channels[Channel].Freq;
-	if (Channels[Channel].AW || Channels[Channel].WD)
+	if (/*Channels[Channel].AW || */Channels[Channel].WD)
 	{
 		return 0;
 	}
@@ -410,7 +410,7 @@ uchar FDC2214_SetINTB(uchar Enable)
 
 uchar FDC2214_SetSleepMode(uchar Sleep)
 {
-	return FDC2214_ModifyRegBit(FDC2214_CONFIG, FDC2214_CONFIG_SLEEP_MODE_EN_MASK, Sleep);
+	return FDC2214_ModifyRegBit(FDC2214_CONFIG, FDC2214_CONFIG_RESERVED_MASK, 1) && FDC2214_ModifyRegBit(FDC2214_CONFIG, FDC2214_CONFIG_SLEEP_MODE_EN_MASK, Sleep);
 }
 
 uchar FDC2214_SetCurrentMode(uchar UserDefined, uchar SingleChannelHighCurrent)
@@ -455,58 +455,4 @@ uchar FDC2214_SetDeglitch(FDC2214_DEGLITCH_SEL Val)
 uchar FDC2214_Reset(void)
 {
 	return FDC2214_ModifyRegBit(FDC2214_RESET_DEV, FDC2214_RESET_DEV_RESET_DEV_MASK, 1);
-}
-
-
-
-
-ulong fdc2214_get_channel_data(uchar Channel)
-{
-	ulong value = 0, value_lsb = 0;
-	uchar DataRegAddrH = FDC2214_DATA_CH0 + 2 * Channel;
-	uchar DataRegAddrL = FDC2214_DATA_LSB_CH0 + 2 * Channel;
-	FDC2214_Read(DataRegAddrH, &value);
-	FDC2214_Read(DataRegAddrL, &value_lsb);
-	return (value << 16) | (value_lsb & 0x0000ffff);
-}
-
-#define PACKET_HEADER_F         0x5A
-#define PACKET_HEADER_S         0xA5
-
-static ushort serial_sum_check(uchar* p_buffer, uchar length)
-{
-	uchar index = length;
-	ushort sum = 0;
-	while (index--)
-	{
-		sum += *p_buffer++;
-	}
-	return sum;
-}
-
-static void serial_raw_handle(uchar* p_buffer, ulong data)
-{
-	p_buffer[0] = (data >> 24) & 0xff;
-	p_buffer[1] = (data >> 16) & 0xff;
-	p_buffer[2] = (data >> 8) & 0xff;
-	p_buffer[3] = data & 0xff;
-}
-
-#include "UART.h"
-
-void FDC2214_MonitorDebug(void)
-{
-	uchar buffer[20] = { 0 };
-	buffer[0] = PACKET_HEADER_F;
-	buffer[1] = PACKET_HEADER_S;
-	serial_raw_handle(buffer + 2, fdc2214_get_channel_data(0));
-	serial_raw_handle(buffer + 6, fdc2214_get_channel_data(1));
-	serial_raw_handle(buffer + 10, fdc2214_get_channel_data(2));
-	serial_raw_handle(buffer + 14, fdc2214_get_channel_data(3));
-
-	ushort check = serial_sum_check(buffer + 2, 16);
-	buffer[18] = (check >> 8) & 0xff;
-	buffer[19] = check & 0xff;
-
-	UART1_SendBytes(buffer, 20);
 }

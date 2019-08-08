@@ -2,11 +2,14 @@
 
 #include "Global.h"
 
-#define CalibrationCount 10
+#define CalibrationSegmentCount 2
 
 typedef struct
 {
-	float LevelCalibration[CalibrationCount];
+	float OpenCap;
+	float Boundary[CalibrationSegmentCount-1];
+	float k[CalibrationSegmentCount];
+	float b[CalibrationSegmentCount];
 	ushort Key;
 }InfoBlock;
 

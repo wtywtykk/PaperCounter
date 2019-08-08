@@ -66,8 +66,3 @@ uchar FDC2214_SetClockSource(uchar External, float ExtFreq);
 uchar FDC2214_SetConvertChannel(uchar AutoScan, uchar ChannelSel);
 uchar FDC2214_SetDeglitch(FDC2214_DEGLITCH_SEL Val);
 uchar FDC2214_Reset(void);
-
-
-
-
-void FDC2214_MonitorDebug(void);

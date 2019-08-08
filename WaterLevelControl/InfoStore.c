@@ -13,12 +13,7 @@ void LoadInfo(void)
 	memcpy(&Info, InfoFlashAddr[0], sizeof(Info));
 	if (Info.Key != Info_Key)
 	{
-		ushort i = 0;
-		for (i = 0; i < CalibrationCount; i++)
-		{
-			//Info.LevelCalibration[i] = CalibrationLower + (CalibrationUpper - CalibrationLower) / (CalibrationCount - 1) * i;
-			//TODO: 载入默认校准数据
-		}
+		//TODO: 载入默认校准数据
 	}
 }
 
