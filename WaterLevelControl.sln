@@ -1,0 +1,25 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 15
+VisualStudioVersion = 15.0.27703.2047
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "WaterLevelControl", "WaterLevelControl\WaterLevelControl.vcxproj", "{32EEF14C-C061-4B95-AD30-22D258AB50FE}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|VisualGDB = Debug|VisualGDB
+		Release|VisualGDB = Release|VisualGDB
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{32EEF14C-C061-4B95-AD30-22D258AB50FE}.Debug|VisualGDB.ActiveCfg = Debug|VisualGDB
+		{32EEF14C-C061-4B95-AD30-22D258AB50FE}.Debug|VisualGDB.Build.0 = Debug|VisualGDB
+		{32EEF14C-C061-4B95-AD30-22D258AB50FE}.Release|VisualGDB.ActiveCfg = Release|VisualGDB
+		{32EEF14C-C061-4B95-AD30-22D258AB50FE}.Release|VisualGDB.Build.0 = Release|VisualGDB
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {95AA2D12-0BF1-4C37-9EC0-CBF9568B692A}
+	EndGlobalSection
+EndGlobal

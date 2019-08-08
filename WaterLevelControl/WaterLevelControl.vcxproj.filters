@@ -1,0 +1,169 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Source files">
+      <UniqueIdentifier>{7bd547c7-cb6d-436c-bd17-8de9cc44058a}</UniqueIdentifier>
+      <Extensions>cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+    </Filter>
+    <Filter Include="Header files">
+      <UniqueIdentifier>{8e4e6b0b-f84c-45ba-95a7-18d75a779291}</UniqueIdentifier>
+      <Extensions>h;hpp;hxx;hm;inl;inc;xsd</Extensions>
+    </Filter>
+    <Filter Include="Resource files">
+      <UniqueIdentifier>{7b2c77f9-2d5d-4db3-9981-e5ec10eec36e}</UniqueIdentifier>
+      <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav</Extensions>
+    </Filter>
+    <Filter Include="Source files\Device-specific files">
+      <UniqueIdentifier>{372d44c4-82fd-40fe-b7db-47c40d7e3ed5}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header files\Device-specific files">
+      <UniqueIdentifier>{c58976d0-42ac-4b23-a076-73fc86c91744}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="VisualGDB settings">
+      <UniqueIdentifier>{58dda778-1b0e-4599-af97-6152dca17a10}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="mcu.props">
+      <Filter>Source files\Device-specific files</Filter>
+    </None>
+    <None Include="WaterLevelControl-Debug.vgdbsettings">
+      <Filter>VisualGDB settings</Filter>
+    </None>
+    <None Include="WaterLevelControl-Release.vgdbsettings">
+      <Filter>VisualGDB settings</Filter>
+    </None>
+    <None Include="MCU.xml">
+      <Filter>VisualGDB settings</Filter>
+    </None>
+    <ClCompile Include="BoardKey.c">
+      <Filter>Source files</Filter>
+    </ClCompile>
+    <ClCompile Include="Clock.c">
+      <Filter>Source files</Filter>
+    </ClCompile>
+    <ClCompile Include="low_level_init.c">
+      <Filter>Source files</Filter>
+    </ClCompile>
+    <ClCompile Include="Main.c">
+      <Filter>Source files</Filter>
+    </ClCompile>
+    <ClCompile Include="OLED.c">
+      <Filter>Source files</Filter>
+    </ClCompile>
+    <ClCompile Include="OLEDBuffered.c">
+      <Filter>Source files</Filter>
+    </ClCompile>
+    <ClCompile Include="OLEDHal.c">
+      <Filter>Source files</Filter>
+    </ClCompile>
+    <ClCompile Include="OLEDIIC.c">
+      <Filter>Source files</Filter>
+    </ClCompile>
+    <ClCompile Include="OLEDSPI.c">
+      <Filter>Source files</Filter>
+    </ClCompile>
+    <ClCompile Include="PortInterrupts.c">
+      <Filter>Source files</Filter>
+    </ClCompile>
+    <ClCompile Include="Timer.c">
+      <Filter>Source files</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="BoardKey.h">
+      <Filter>Header files</Filter>
+    </ClInclude>
+    <ClInclude Include="Clock.h">
+      <Filter>Header files</Filter>
+    </ClInclude>
+    <ClInclude Include="code_table.h">
+      <Filter>Header files</Filter>
+    </ClInclude>
+    <ClInclude Include="Global.h">
+      <Filter>Header files</Filter>
+    </ClInclude>
+    <ClInclude Include="OLED.h">
+      <Filter>Header files</Filter>
+    </ClInclude>
+    <ClInclude Include="OLEDBuffered.h">
+      <Filter>Header files</Filter>
+    </ClInclude>
+    <ClInclude Include="OLEDHal.h">
+      <Filter>Header files</Filter>
+    </ClInclude>
+    <ClInclude Include="OLEDIIC.h">
+      <Filter>Header files</Filter>
+    </ClInclude>
+    <ClInclude Include="OLEDSPI.h">
+      <Filter>Header files</Filter>
+    </ClInclude>
+    <ClInclude Include="PortInterrupts.h">
+      <Filter>Header files</Filter>
+    </ClInclude>
+    <ClInclude Include="Timer.h">
+      <Filter>Header files</Filter>
+    </ClInclude>
+    <ClInclude Include="FDC2214.h">
+      <Filter>Header files</Filter>
+    </ClInclude>
+    <ClInclude Include="FDC2214_Reg.h">
+      <Filter>Header files</Filter>
+    </ClInclude>
+    <ClInclude Include="Control.h">
+      <Filter>Header files</Filter>
+    </ClInclude>
+    <ClInclude Include="UART.h">
+      <Filter>Header files</Filter>
+    </ClInclude>
+    <ClInclude Include="UARTTypes.h">
+      <Filter>Header files</Filter>
+    </ClInclude>
+    <ClInclude Include="Graphic.h">
+      <Filter>Header files</Filter>
+    </ClInclude>
+    <ClInclude Include="DMAADC.h">
+      <Filter>Header files</Filter>
+    </ClInclude>
+    <ClInclude Include="DMA.h">
+      <Filter>Header files</Filter>
+    </ClInclude>
+    <ClInclude Include="InfoStore.h">
+      <Filter>Header files</Filter>
+    </ClInclude>
+    <ClInclude Include="HardIIC.h">
+      <Filter>Header files</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="FDC2214.c">
+      <Filter>Source files</Filter>
+    </ClCompile>
+    <ClCompile Include="Control.c">
+      <Filter>Source files</Filter>
+    </ClCompile>
+    <ClCompile Include="UART.c">
+      <Filter>Source files</Filter>
+    </ClCompile>
+    <ClCompile Include="IORedirect.c">
+      <Filter>Source files</Filter>
+    </ClCompile>
+    <ClCompile Include="DMAADC.c">
+      <Filter>Source files</Filter>
+    </ClCompile>
+    <ClCompile Include="DMA.c">
+      <Filter>Source files</Filter>
+    </ClCompile>
+    <ClCompile Include="InfoStore.c">
+      <Filter>Source files</Filter>
+    </ClCompile>
+    <ClCompile Include="HardIIC.c">
+      <Filter>Source files</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedBinaryFile Include="ASC16">
+      <Filter>Resource files</Filter>
+    </EmbeddedBinaryFile>
+  </ItemGroup>
+</Project>
