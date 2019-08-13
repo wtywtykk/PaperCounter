@@ -7,7 +7,7 @@
 
 void OLEDIIC_delayus(unsigned int i)
 {
-	unsigned int j, k;
+	volatile unsigned int j, k;
 	for (k = 0; k < i; k++)
 		for (j = 0; j < 4; j++);
 }
@@ -32,10 +32,10 @@ void OLEDIIC_stop()
 {
 	SCL_LOW();
 	SDA_LOW();
-	//IIC_delayus(2);
+	//OLEDIIC_delayus(2);
 	SCL_HIGH();
 	SDA_HIGH();
-	//IIC_delayus(2);
+	//OLEDIIC_delayus(2);
 }
 
 void OLEDIIC_writebyte(unsigned char OLED_byte)

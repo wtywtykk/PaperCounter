@@ -14,26 +14,27 @@
 #include "UART.h"
 #include "DMAADC.h"
 #include "InfoStore.h"
+#include "DigitDisp.h"
 
-typedef enum //邀请赛测评用
+typedef enum
 {
 	Cali,
 	Run,
 }ScreenEnum;
-ScreenEnum ScreenStatus = Cali;
-uchar ScreenClearRequired = 1;
+ScreenEnum ScreenStatus = Run;
 
 #define NumOfCalibration  10
 
-uint CaliIndex = 1;
-ushort i_Calibration = 0;
-static ushort CaliFlag = 0;
-static ushort MeasFlag = 0;
+ushort CaliProcessCounter = 0;
 static float CapCali[NumOfCalibration] = { 0 };
 static float TestNumPaper[NumOfCalibration] = { 1, 2, 3, 4, 5, 10, 15, 20, 25, 30 };
 static ushort CalSegment[CalibrationSegmentCount] = { 3,7 };
 
-void InitSysClock(void) //430时钟初始化
+static uchar LastDataShort = 0;
+static float LastCap = 0;
+static float MeasurePaperCount = 0;
+
+void InitSysClock(void)
 {
 	Clock clk;
 	clk.ACLKDivide = 1;
@@ -49,7 +50,7 @@ void InitSysClock(void) //430时钟初始化
 	Clock_Init(&clk);
 }
 
-void InitLED(void)  //初始化LED IO口
+void InitLED(void)
 {
 	P1DIR |= 1 << 0;
 	P4DIR |= 1 << 7;
@@ -60,72 +61,40 @@ void InitLED(void)  //初始化LED IO口
 void Buzzer()
 {
 	P2DIR |= (1 << 5);
-	P2OUT |= (1 << 5);
-	Delay(100);
 	P2OUT &= ~(1 << 5);
+	Delay(100);
+	P2OUT |= (1 << 5);
 }
 
-void UpdateLED(void)
-{
-	if ((GetTickSafe() / 500) % 2)
-	{
-		P1OUT |= 1 << 0;  //P1.0 高电平
-		P4OUT &= ~(1 << 7);//P4.7 低电平
-	}
-	else
-	{
-		P1OUT &= ~(1 << 0);
-		P4OUT |= 1 << 7;
-	}
-}
-
-void JumpToStatus(ScreenEnum NewStatus)//邀请赛测评用 切换模式
+void JumpToStatus(ScreenEnum NewStatus)
 {
 	ScreenStatus = NewStatus;
 	switch (ScreenStatus)
 	{
 	case Cali:
-		CaliIndex = 1;
+		CaliProcessCounter = 0;
 		break;
 	case Run:
 		break;
 	}
-	ScreenClearRequired = 1;
 }
 
-void CheckKey(void)
-{
-	char sb[32];
-
-	switch (ScreenStatus)  //先选定模式 再控制按键
-	{
-	case Cali:
-
-		break;
-	case Run:
-
-		switch (BoardKey_GetLastKey())
-		{
-		case BOARDKEY_LEFT:
-		{
-		}
-		break;
-		case BOARDKEY_RIGHT:
-			JumpToStatus(Cali);
-			break;
-		}
-		break;
-	}
-}
-
-void DrawKeyHint(void)   //显示按键底部提示
+void DrawKeyHint(void)
 {
 	const char* LeftTip = "--";
 	const char* RightTip = "--";
 	uchar TipWidth = 0;
 
-	LeftTip = "Cali";
-	RightTip = "Meas";
+	switch (ScreenStatus)
+	{
+	case Cali:
+		RightTip = "Meas";
+		break;
+	case Run:
+		LeftTip = "Cali";
+		RightTip = "Meas";
+		break;
+	}
 
 	OLED_Fill(0, 7 * 8, OLED_Width, 8, 0);
 	OLED_WriteStr(0, 7 * 8, LeftTip, 0);
@@ -133,54 +102,110 @@ void DrawKeyHint(void)   //显示按键底部提示
 	OLED_WriteStr(OLED_Width - TipWidth, 7 * 8, RightTip, 0);
 }
 
-void DrawKeyHintLeft(uchar Pos, uchar Val)   //显示按键底部提示
-{
-	const char* LeftTip = "--";
-	uchar TipWidth = 0;
-	LeftTip = "Cali";
-	//OLED_Fill(0, Pos * 8, OLED_Width, 8, Val);
-	OLED_WriteStr(0, Pos * 8, LeftTip, Val);
-}
-
-void DrawKeyHintRight(uchar Pos, uchar Val)   //显示按键底部提示
-{
-	const char* RightTip = "--";
-	uchar TipWidth = 0;
-
-	RightTip = "Meas";
-	//OLED_Fill(0, Pos * 8, OLED_Width, 8, Val);
-	OLED_EstimateStr(RightTip, &TipWidth, NULL);
-	OLED_WriteStr(OLED_Width - TipWidth, Pos * 8, RightTip, Val);
-}
-
-void DrawInterface(void)  //显示主界面
+void DrawInterface(void)
 {
 	char sb[32];
+
+	if (LastDataShort)
+	{
+		OLED_WriteStr(0, 6 * 8, "!!!PlateShort!!!", 1);
+	}
 
 	switch (ScreenStatus)
 	{
 	case Cali:
-		sprintf(sb, "Calibrate count: %d ", CaliIndex); //打印数据
-		OLED_WriteStr(0, 0, "Calibration", 1);
-		OLED_WriteStr(0, 7 * 8, sb, 1);
-		break;
+	{
+		ushort CalibrationIndex = CaliProcessCounter / 2;
+		uchar IsDone = CaliProcessCounter % 2;
+		OLED_WriteStr(0, 0, "Calibration", 0);
+
+		if (CalibrationIndex == 0)
+		{
+			OLED_WriteStr(0, 3 * 8, "Open Calibration", 1);
+		}
+		else if (CalibrationIndex > NumOfCalibration)
+		{
+			OLED_WriteStr(0, 3 * 8, "Calibration Done", 1);
+			OLED_WriteStr(0, 4 * 8, "Press ""Meas"" to save.", 1);
+		}
+		else
+		{
+			sprintf(sb, "Put %d paper(s)", (uint)TestNumPaper[CalibrationIndex - 1]);
+			OLED_WriteStr(5, 3 * 8, sb, 1);
+		}
+		if (IsDone)
+		{
+			OLED_WriteStr(0, 4 * 8, "...Sampled", 1);
+		}
+		sprintf(sb, "UCC%ld", (long)((LastCap + Info.OpenCap) * 1000));
+		OLED_WriteStr(0, 5 * 8, sb, 1);
+	}
+	break;
 	case Run:
-		break;
+	{
+		OLED_WriteStr(0, 0, "Measure", 0);
+		long PaperCountInt = (MeasurePaperCount + 0.5);
+		if (MeasurePaperCount > 0 && !LastDataShort)
+		{
+			sprintf(sb, "%ld", PaperCountInt);
+			DigitDisp_DispStr(60, 0, 16, 32, 3, sb);
+		}
+		else
+		{
+			DigitDisp_DispStr(60, 0, 16, 32, 3, "EEE");
+		}
+		sprintf(sb, "UCC%ld D%ld", (long)((LastCap + Info.OpenCap) * 1000), (long)((MeasurePaperCount - PaperCountInt) * 1000));
+		OLED_WriteStr(0, 5 * 8, sb, 1);
+	}
+	break;
 	}
 }
 
 void UpdateScreen(void)
 {
-	if (ScreenClearRequired)
-	{
-		OLED_Clear();
-		ScreenClearRequired = 0;
-	}
-
+	OLED_Clear();
 	DrawKeyHint();
-	//DrawInterface();
-	//Control_Disp();
+	DrawInterface();
 	OLED_BufferFulsh();
+}
+
+void PlayVoice(uchar Str[])//GB2312 encoding
+{
+	uchar Command[256];
+	uint16_t Len = strlen(Str);
+	if (Len > sizeof(Command) - 5)
+	{
+		Len = sizeof(Command) - 5;
+	}
+	Command[0] = 0xFD;
+	Command[1] = (Len + 2) >> 8;
+	Command[2] = (Len + 2) & 0xFF;
+	Command[3] = 0x1;
+	Command[4] = 0x0;
+	strncpy(&Command[5], Str, Len);
+	UART1_SendBytes(Command, Len + 5);
+}
+
+void VoiceReportCount(void)
+{
+	char Buf[128];
+	if (!LastDataShort)
+	{
+		if (MeasurePaperCount > 0)
+		{
+			long PaperCountInt = (MeasurePaperCount + 0.5);
+			sprintf(Buf, "[n2][m3][g1]测到%d张纸[m20][g2]%d papers detected", PaperCountInt, PaperCountInt);
+		}
+		else
+		{
+			strcpy(Buf, "[m3]测量失败[m20]measurement failed");
+		}
+	}
+	else
+	{
+		strcpy(Buf, "[m3]极板短路[m20]plate short");
+	}
+	PlayVoice(Buf);
 }
 
 void LSM(ushort Count, float x[], float y[], float* k, float* b)
@@ -193,7 +218,8 @@ void LSM(ushort Count, float x[], float y[], float* k, float* b)
 	double AverageX = 0;
 	double AverageY = 0;
 
-	for (i = 0; i < Count; i++) {  //
+	for (i = 0; i < Count; i++)
+	{
 		SumXY += x[i] * y[i];
 		SumX += x[i];
 		SumY += y[i];
@@ -208,12 +234,10 @@ void LSM(ushort Count, float x[], float y[], float* k, float* b)
 
 void CalcCalData()
 {
-	//最小二乘算法计算系数
 	uint i = 0;
 	uint CalDataIndex = 0;
 	float CapCaliLog[NumOfCalibration] = { 0 };
 	float TestNumPaperLog[NumOfCalibration] = { 0 };
-	float TestNumPaperrev[NumOfCalibration] = { 0 };
 
 	for (i = 0; i < NumOfCalibration; i++)
 	{
@@ -231,10 +255,6 @@ void CalcCalData()
 		}
 	}
 	assert(CalDataIndex == NumOfCalibration);
-	for (i = 0; i < NumOfCalibration; i++)
-	{
-		TestNumPaperrev[i] = Info.k[1] * CapCaliLog[i] + Info.b[1];
-	}
 	SaveInfo();
 }
 
@@ -247,145 +267,124 @@ float CalcPaperCount(float MeasureData)
 	{
 		if ((i == CalibrationSegmentCount - 1) || (MeasureData >= Info.Boundary[i]))
 		{
-			return expf(Info.k[i] * MeasureDataLog + Info.b[i]);
+			float Ret = expf(Info.k[i] * MeasureDataLog + Info.b[i]);
+			if (Ret > 999)
+			{
+				Ret = -1;
+			}
+			return Ret;
 		}
 	}
 	return -1;
 }
 
-void Control_Key(void)
+float DoMeasurementAndReport(void)
+{
+	float Ret = 0;
+	P4OUT &= ~(1 << 7);
+	P1OUT &= ~(1 << 0);
+	Delay(1000);
+	P4OUT |= (1 << 7);
+	Ret = FDC2214_GetFinalData();
+	LastCap = Ret;
+	if (Ret < 0)
+	{
+		LastDataShort = 1;
+		Buzzer();
+		Delay(100);
+		Buzzer();
+	}
+	else
+	{
+		Buzzer();
+		LastDataShort = 0;
+	}
+	P1OUT |= (1 << 0);
+	return Ret;
+}
+
+void CheckKey(void)
 {
 	char sb[64];
 
-	//DrawKeyHint();
-
-	switch (BoardKey_GetLastKey())
+	switch (ScreenStatus)
 	{
-	case BOARDKEY_LEFT:
-		OLED_Fill(0, 0 * 8, OLED_Width, 8, 0);
-		DrawKeyHintLeft(0, 1);
-		CaliFlag = 1;
-		P1OUT |= 1 << 0;
-		Delay(500);
-		P1OUT &= ~(1 << 0);
-
-		break;
-
-	case BOARDKEY_RIGHT:
-
-		P4OUT |= 1 << 7;
-		Delay(500);
-		P4OUT &= ~(1 << 7);//P4.7 低电平
-
-		if (CaliFlag)//校准模式
+	case Cali:
+		switch (BoardKey_GetLastKey())
 		{
-			if (i_Calibration == 0)
+		case BOARDKEY_LEFT:
+			break;
+		case BOARDKEY_RIGHT:
+		{
+			ushort CalibrationIndex = CaliProcessCounter / 2;
+			uchar IsDone = CaliProcessCounter % 2;
+			if (IsDone)
 			{
-				//开路检测
-				sprintf(sb, "Open Calibration");
-				OLED_Fill(0, 3 * 8, OLED_Width, 8, 0);
-				OLED_WriteStr(10, 3 * 8, sb, 1);
-				Info.OpenCap = 0;
-				Info.OpenCap = FDC2214_GetFinalData();
-				if (Info.OpenCap < 0)
+				if (CalibrationIndex >= NumOfCalibration)
 				{
+					CalcCalData();
 					Buzzer();
-					Delay(100);
+					Delay(50);
 					Buzzer();
-					OLED_WriteStr(10, 3 * 8, "PlateShort", 1);
-					return;
+					Delay(50);
+					Buzzer();
+					Delay(50);
+					JumpToStatus(Run);
 				}
-			}
-			else if (i_Calibration > NumOfCalibration * 2)
-			{
-				sprintf(sb, "Calibration Done");
-				OLED_Fill(0, 3 * 8, OLED_Width, 8, 0);
-				OLED_Fill(0, 4 * 8, OLED_Width, 8, 0);
-				OLED_WriteStr(10, 3 * 8, sb, 1);
-				CaliFlag = 0;
-				CalcCalData();
-				Buzzer();
-				Delay(50);
-				Buzzer();
-				Delay(50);
-				Buzzer();
-				Delay(50);
 			}
 			else
 			{
-				if (i_Calibration % 2 == 1)
+				if (CalibrationIndex == 0)
 				{
-					sprintf(sb, "Please put %d paper!", (uint)TestNumPaper[(i_Calibration - 1) / 2]);
-					OLED_Fill(0, 3 * 8, OLED_Width, 8, 0);
-					OLED_Fill(0, 4 * 8, OLED_Width, 8, 0);
-
-					OLED_WriteStr(5, 3 * 8, sb, 1);
-				}
-				else
-				{
-					CapCali[i_Calibration / 2 - 1] = FDC2214_GetFinalData();
-					if (CapCali[i_Calibration / 2 - 1] < 0)
+					Info.OpenCap = 0;
+					Info.OpenCap = DoMeasurementAndReport();
+					if (Info.OpenCap < 0)
 					{
-						Buzzer();
-						Delay(100);
-						Buzzer();
-						OLED_WriteStr(10, 3 * 8, "PlateShort", 1);
 						return;
 					}
-					printf("%d, %ld\r\n", TestNumPaper[i_Calibration / 2 - 1], (long)(CapCali[i_Calibration / 2 - 1]));
-					sprintf(sb, "%d, %ld", TestNumPaper[i_Calibration / 2 - 1], (long)(CapCali[i_Calibration / 2 - 1]));
-					OLED_WriteStr(5, 4 * 8, sb, 1);
-					Buzzer();
-				}
-			}
-			i_Calibration++;
-		}
-		else
-		{
-			//测量模式
-			OLED_Fill(0, 0 * 8, OLED_Width, 8, 0);
-			DrawKeyHintRight(0, 1);
-
-			float MeasVal = FDC2214_GetFinalData();
-			if (MeasVal > 0)
-			{
-				float PaperCount = CalcPaperCount(MeasVal);
-				long PaperCountInt = (PaperCount + 0.5);
-				if (PaperCount > 0)
-				{
-					printf("%ld\r\n", (long)(1000 * PaperCount));
-					sprintf(sb, " %ld       ", PaperCountInt);
-					OLED_WriteStr(0, 6 * 8, sb, 1);
 				}
 				else
 				{
-					printf("Error\r\n");
-					OLED_WriteStr(0, 6 * 8, "Error  ", 1);
+					CapCali[CalibrationIndex - 1] = DoMeasurementAndReport();
+					if (CapCali[CalibrationIndex - 1] < 0)
+					{
+						return;
+					}
 				}
-				sprintf(sb, "1kM %ld     ", (long)((MeasVal+Info.OpenCap)*1000));
-				OLED_WriteStr(0, 2 * 8, sb, 1);
-				sprintf(sb, "1kD %ld     ", (long)((PaperCount - PaperCountInt) * 1000));
-				OLED_WriteStr(0, 3 * 8, sb, 1);
-				Buzzer();
+			}
+			CaliProcessCounter++;
+		}
+		break;
+		}
+		break;
+	case Run:
+		switch (BoardKey_GetLastKey())
+		{
+		case BOARDKEY_LEFT:
+			JumpToStatus(Cali);
+			break;
+		case BOARDKEY_RIGHT:
+		{
+			float MeasVal = DoMeasurementAndReport();
+			if (MeasVal > 0)
+			{
+				MeasurePaperCount = CalcPaperCount(MeasVal);
 			}
 			else
 			{
-				printf("PlateShort\r\n");
-				OLED_WriteStr(0, 6 * 8, "PlateShort  ", 1);
-				Buzzer();
-				Delay(100);
-				Buzzer();
+				MeasurePaperCount = -1;
 			}
+			VoiceReportCount();
+		}
+		break;
 		}
 		break;
 	}
 }
-ushort Buf[1024];
 
 int main()
 {
-	char sb[32];
-	WDTCTL = WDTPW | WDTHOLD;//关看门狗
+	WDTCTL = WDTPW | WDTHOLD;
 	__enable_interrupt();
 	InitSysClock();
 	PortInterrupts_Init();
@@ -407,7 +406,7 @@ int main()
 	while (1)
 	{
 		UpdateScreen();
-		Control_Key();
+		CheckKey();
 	}
 }
 

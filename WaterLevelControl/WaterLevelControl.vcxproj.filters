@@ -134,6 +134,9 @@
     <ClInclude Include="HardIIC.h">
       <Filter>Header files</Filter>
     </ClInclude>
+    <ClInclude Include="DigitDisp.h">
+      <Filter>Header files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="FDC2214.c">
@@ -160,10 +163,8 @@
     <ClCompile Include="HardIIC.c">
       <Filter>Source files</Filter>
     </ClCompile>
-  </ItemGroup>
-  <ItemGroup>
-    <EmbeddedBinaryFile Include="ASC16">
-      <Filter>Resource files</Filter>
-    </EmbeddedBinaryFile>
+    <ClCompile Include="DigitDisp.c">
+      <Filter>Source files</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>

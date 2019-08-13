@@ -17,7 +17,7 @@
 void OLEDHal_SetPos(unsigned char x, unsigned char y)
 {
 	WriteCmd(0xb0 + y);
-	//x = x + 2;
+	x = x + 2;
 	WriteCmd(((x & 0xf0) >> 4) | 0x10);
 	WriteCmd(x & 0x0f);
 }

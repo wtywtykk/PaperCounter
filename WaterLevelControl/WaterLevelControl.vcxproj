@@ -70,6 +70,7 @@
     <ClInclude Include="Clock.h" />
     <ClInclude Include="code_table.h" />
     <ClInclude Include="Control.h" />
+    <ClInclude Include="DigitDisp.h" />
     <ClInclude Include="DMA.h" />
     <ClInclude Include="DMAADC.h" />
     <ClInclude Include="FDC2214.h" />
@@ -95,6 +96,7 @@
     <ClCompile Include="BoardKey.c" />
     <ClCompile Include="Clock.c" />
     <ClCompile Include="Control.c" />
+    <ClCompile Include="DigitDisp.c" />
     <ClCompile Include="DMA.c" />
     <ClCompile Include="DMAADC.c" />
     <ClCompile Include="FDC2214.c" />
@@ -111,9 +113,6 @@
     <ClCompile Include="PortInterrupts.c" />
     <ClCompile Include="Timer.c" />
     <ClCompile Include="UART.c" />
-    <EmbeddedBinaryFile Include="ASC16">
-      <FileType>Document</FileType>
-    </EmbeddedBinaryFile>
     <None Include="mcu.props" />
     <None Include="WaterLevelControl-Debug.vgdbsettings" />
     <None Include="WaterLevelControl-Release.vgdbsettings" />

@@ -12,8 +12,11 @@
   </Project>
   <Build xsi:type="com.visualgdb.build.msbuild">
     <ToolchainID>
+      <ID>com.visualgdb.msp430</ID>
       <Version>
-        <Revision>0</Revision>
+        <GCC>4.6.3</GCC>
+        <GDB>7.4</GDB>
+        <Revision>7</Revision>
       </Version>
     </ToolchainID>
     <ProjectFile>WaterLevelControl.vcxproj</ProjectFile>
@@ -138,7 +141,7 @@
       <ForceSingleThreadedMode>false</ForceSingleThreadedMode>
       <UseAppleExtensions>false</UseAppleExtensions>
       <CanAcceptCommandsWhileRunning>false</CanAcceptCommandsWhileRunning>
-      <MakeLogFile>false</MakeLogFile>
+      <MakeLogFile>true</MakeLogFile>
       <IgnoreModuleEventsWhileStepping>true</IgnoreModuleEventsWhileStepping>
       <UseRelativePathsOnly>false</UseRelativePathsOnly>
       <ExitAction>None</ExitAction>

@@ -51,7 +51,6 @@ void Control_DebugDisp(void)//显示FDC 调试值
 		char sb[32];
 		uchar Ret = FDC2214_GetChannelFreq(i, &vF);
 		FDC2214_GetChannelCapacitance(i, &vC);
-		//printf("%d %dF %ld C %ld\r\n", i, Ret, (long)(vF), (long)(1000 * vC));
 		sprintf(sb, "%d %dF %ld C %ld  ", i, Ret, (long)(vF), (long)(1000 * vC));
 		OLED_WriteStr(0, i * 8, sb, 1);
 	}
@@ -66,13 +65,13 @@ void Data_processing(float* FinalData, float* RawData)
 	float FinalData_temp = 0;
 	float temp = 0;
 
-	for (i = 0; i < NumMeasure - 1; ++i)//n个数,总共需要进行n-1次    
+	for (i = 0; i < NumMeasure - 1; ++i)//n个数,总共需要进行n-1次
 	{
-		//n-1个数排完,第一个数一定已经归位        
-		//每次会将最大(升序)或最小(降序)放到最后面        
+		//n-1个数排完,第一个数一定已经归位
+		//每次会将最大(升序)或最小(降序)放到最后面
 		for (j = 0; j < NumMeasure - i - 1; ++j)
 		{
-			if (RawData[j] > RawData[j + 1])//每次冒泡,进行交换            
+			if (RawData[j] > RawData[j + 1])//每次冒泡,进行交换
 			{
 				temp = RawData[j];
 				RawData[j] = RawData[j + 1];
@@ -115,14 +114,8 @@ float FDC2214_GetFinalData(void)
 	{
 		return -1;
 	}
-
-	//float zhangshu = powf(10, (2.5726 - log10f(FinalData)) / 0.8549);
-	//printf("%ld\r\n", (long)(1000 * FinalData));
-	//sprintf(sb, " %ld  ", (long)(zhangshu));
-	//OLED_WriteStr(0, 6 * 8, sb, 1);
-	//sprintf(sb, " %ld  ", (long)(1000 * FinalData));
-	//OLED_WriteStr(0, 5 * 8, sb, 1);
 }
+
 void Control_Init(void)
 {
 	FDC2214_SetDeglitch(DEGLITCH_BW_10M);
@@ -170,5 +163,4 @@ void Control_Disp(void)
 	//lftoa(nsb, Level);
 	//sprintf(sb, "Level: %s mm  ", nsb);
 	//OLED_WriteStr(0, 40, sb, 1);
-	//printf("%ld\r\n", (long)(Level * 1000));//printf 直接重定向到串口
 }

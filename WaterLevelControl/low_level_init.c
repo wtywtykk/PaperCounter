@@ -15,7 +15,6 @@
  */
 
 #include "Global.h"
-#include <intrinsics.h>
 
 int __low_level_init(void)
 {

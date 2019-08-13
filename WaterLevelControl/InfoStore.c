@@ -4,7 +4,7 @@
 
 #define Info_Key 0x5AA5
 
-InfoBlock Info;   //全部校准数据
+InfoBlock Info;
 
 uchar* const InfoFlashAddr[4] = { (uchar*)0x1800, (uchar*)0x1880, (uchar*)0x1900, (uchar*)0x1980 };
 
@@ -13,7 +13,7 @@ void LoadInfo(void)
 	memcpy(&Info, InfoFlashAddr[0], sizeof(Info));
 	if (Info.Key != Info_Key)
 	{
-		//TODO: 载入默认校准数据
+		//TODO:
 	}
 }
 
