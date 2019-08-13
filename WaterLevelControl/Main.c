@@ -23,12 +23,12 @@ typedef enum
 }ScreenEnum;
 ScreenEnum ScreenStatus = Run;
 
-#define NumOfCalibration  10
+#define NumOfCalibration  11
 
 ushort CaliProcessCounter = 0;
 static float CapCali[NumOfCalibration] = { 0 };
-static float TestNumPaper[NumOfCalibration] = { 1, 2, 3, 4, 5, 10, 15, 20, 25, 30 };
-static ushort CalSegment[CalibrationSegmentCount] = { 3,7 };
+static float TestNumPaper[NumOfCalibration] = { 1, 2, 3, 4, 5, 10, 15, 20, 25, 30, 35 };
+static ushort CalSegment[CalibrationSegmentCount] = { 3,8 };
 
 static uchar LastDataShort = 0;
 static float LastCap = 0;
@@ -193,17 +193,17 @@ void VoiceReportCount(void)
 	{
 		if (MeasurePaperCount > 0)
 		{
-			long PaperCountInt = (MeasurePaperCount + 0.5);
-			sprintf(Buf, "[n2][m3][g1]测到%d张纸[m20][g2]%d papers detected", PaperCountInt, PaperCountInt);
+			short PaperCountInt = (MeasurePaperCount + 0.5);
+			sprintf(Buf, "[n2][m3][g1]测到%d张纸[m20][h2][g2]%d papers detected", PaperCountInt, PaperCountInt);
 		}
 		else
 		{
-			strcpy(Buf, "[m3]测量失败[m20]measurement failed");
+			strcpy(Buf, "[m3]测量失败[m20][h2]measurement failed");
 		}
 	}
 	else
 	{
-		strcpy(Buf, "[m3]极板短路[m20]plate short");
+		strcpy(Buf, "[m3]极板短路[m20][h2]plate short");
 	}
 	PlayVoice(Buf);
 }

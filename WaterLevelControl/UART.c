@@ -103,6 +103,7 @@ void UART1_SendBytes(uchar* Data, uint DataSize)
 	while (DataSize--)
 	{
 		UART1_SendByte(*(Data++));
+		__delay_cycles(10000);
 	}
 }
 
